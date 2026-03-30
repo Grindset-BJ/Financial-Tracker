@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Shared Finance Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f6f3;
+    --bg-tertiary: #efede8;
+    --text-primary: #1c1c1a;
+    --text-secondary: #6e6e69;
+    --text-tertiary: #a8a8a2;
+    --border-soft: rgba(0,0,0,0.1);
+    --border-mid: rgba(0,0,0,0.18);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --purple: #3C3489;
+    --purple-bg: #EEEDFE;
+    --teal: #0F6E56;
+    --teal-bg: #E1F5EE;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1a1a18;
+      --bg-secondary: #242422;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #f0f0ec;
+      --text-secondary: #a0a09a;
+      --text-tertiary: #686864;
+      --border-soft: rgba(255,255,255,0.09);
+      --border-mid: rgba(255,255,255,0.16);
+      --green: #8fcc4a; --green-bg: #1a3a08;
+      --amber: #f0b040; --amber-bg: #3a2808;
+      --red: #f06060; --red-bg: #3a0808;
+      --blue: #60a0f0; --blue-bg: #081a3a;
+      --purple: #a090f0; --purple-bg: #1a1040;
+      --teal: #40c090; --teal-bg: #083a28;
+    }
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  .header {
+    background: var(--bg-primary);
+    border-bottom: 0.5px solid var(--border-soft);
+    padding: 14px 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+
+  .tab {
+    font-size: 13px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  .tab.active {
+    color: var(--text-primary);
+    font-weight: 500;
+    border-bottom-color: var(--text-primary);
+  }
+
+  .container { max-width: 680px; margin: 0 auto; padding: 16px; }
+
+  .tc { display: none; }
+  .tc.active { display: block; }
+
+  .card {
+    background: var(--bg-primary);
+    border: 0.5px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  .sl {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-bottom: 14px;
+  }
+
+  .mg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .mg-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+
+  .met {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+  .ml { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .mv { font-size: 22px; font-weight: 600; color: var(--text-primary); line-height: 1; }
+  .ms { font-size: 10px; color: var(--text-tertiary); margin-top: 3px; }
+  .good { color: var(--green) !important; }
+  .warn { color: var(--red) !important; }
+  .meh  { color: var(--amber) !important; }
+  .info { color: var(--blue) !important; }
+
+  /* Quick buttons */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .qbtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 4px 10px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-soft);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .12s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .qbtn:active { transform: scale(0.95); background: var(--bg-tertiary); }
+
+  .qbtn .qi { font-size: 20px; line-height: 1; }
+  .qbtn .qn { font-size: 10px; font-weight: 500; color: var(--text-primary); text-align: center; line-height: 1.2; }
+  .qbtn .qh { font-size: 9px; color: var(--text-tertiary); }
+
+  /* Toast */
+  .toast {
+    display: none;
+    padding: 10px 14px;
+    background: var(--green-bg);
+    border-left: 3px solid var(--green);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  /* Form inputs */
+  .form-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  input, select, textarea {
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    -webkit-appearance: none;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--text-secondary); }
+
+  .inp-date { width: 130px; }
+  .inp-note { flex: 1; min-width: 100px; }
+  .inp-cat  { flex: 1; min-width: 110px; }
+  .inp-amt  { width: 80px; }
+
+  .btn {
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-mid);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .12s;
+  }
+  .btn:hover { background: var(--bg-secondary); }
+  .btn-danger { border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: var(--red-bg); }
+
+  /* Log entries */
+  .log-head {
+    display: grid;
+    grid-template-columns: 52px 1fr 90px 58px 24px;
+    gap: 6px;
+    padding: 6px 0;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    border-bottom: 0.5px solid var(--border-mid);
+  }
+  .log-row {
+    display: grid;
+    grid-template-columns: 52px 1fr 90px 58px 24px;
+    gap: 6px;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 0.5px solid var(--border-soft);
+    font-size: 13px;
+  }
+  .log-row:last-child { border-bottom: none; }
+
+  .pill {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-weight: 500;
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .p-cook    { background: var(--green-bg);  color: var(--green); }
+  .p-out     { background: #FAECE7; color: #993C1D; }
+  .p-order   { background: var(--purple-bg); color: var(--purple); }
+  .p-quick   { background: var(--blue-bg);   color: var(--blue); }
+  .p-drinks  { background: var(--teal-bg);   color: var(--teal); }
+  .p-snack   { background: var(--amber-bg);  color: var(--amber); }
+  .p-coffee  { background: var(--bg-secondary); color: var(--text-secondary); }
+  .p-taxi    { background: var(--red-bg);    color: var(--red); }
+  .p-bread   { background: var(--amber-bg);  color: var(--amber); }
+  .p-other   { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  .dbtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--text-tertiary);
+    padding: 0;
+    line-height: 1;
+    transition: color .12s;
+  }
+  .dbtn:hover { color: var(--red); }
+
+  /* Day sections */
+  .day-block { margin-bottom: 16px; }
+  .day-hd {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding-bottom: 6px;
+    border-bottom: 0.5px solid var(--border-mid);
+    margin-bottom: 4px;
+  }
+  .day-total { font-weight: 600; color: var(--text-primary); }
+
+  /* Progress bar */
+  .prog-outer {
+    height: 10px;
+    background: var(--bg-secondary);
+    border-radius: 99px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .prog-inner {
+    height: 100%;
+    border-radius: 99px;
+    transition: width .4s, background .4s;
+  }
+  .prog-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* Cat bars */
+  .cat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .cat-lbl { font-size: 12px; color: var(--text-secondary); width: 90px; flex-shrink: 0; }
+  .cat-bg  { flex: 1; height: 5px; background: var(--bg-secondary); border-radius: 99px; overflow: hidden; }
+  .cat-fill { height: 100%; border-radius: 99px; }
+  .cat-val { font-size: 12px; font-weight: 600; color: var(--text-primary); width: 42px; text-align: right; flex-shrink: 0; }
+
+  .empty { font-size: 13px; color: var(--text-tertiary); padding: 16px 0; text-align: center; }
+
+  .row-sb {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--border-soft);
+  }
+  .row-sb:last-child { border-bottom: none; }
+  .row-sb .lbl { color: var(--text-secondary); }
+  .row-sb .val { font-weight: 600; }
+
+  .divider { border: none; border-top: 0.5px solid var(--border-soft); margin: 12px 0; }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+    border-top: 0.5px solid var(--border-mid);
+    margin-top: 4px;
+  }
+
+  @media (max-width: 420px) {
+    .quick-grid { grid-template-columns: repeat(4, 1fr); }
+    .mg-4 { grid-template-columns: repeat(2, 1fr); }
+    .log-head, .log-row { grid-template-columns: 44px 1fr 76px 50px 22px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Shared Finance Tracker</h1>
+  <div class="tab-bar">
+    <button class="tab active" onclick="showTab('log',this)">Quick log</button>
+    <button class="tab" onclick="showTab('week',this)">This week</button>
+    <button class="tab" onclick="showTab('pot',this)">Pot & savings</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ── QUICK LOG ── -->
+  <div id="tab-log" class="tc active">
+    <div class="card">
+      <div class="sl">Tap a category — enter the price</div>
+      <div class="quick-grid">
+        <button class="qbtn" onclick="quickLog('Eat out',60)">
+          <span class="qi">🍜</span><span class="qn">Eat out</span><span class="qh">~¥60</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Order in',60)">
+          <span class="qi">📦</span><span class="qn">Order in</span><span class="qh">~¥60</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Quick lunch',40)">
+          <span class="qi">🥪</span><span class="qn">Quick lunch</span><span class="qh">~¥40</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Cooking',125)">
+          <span class="qi">🍳</span><span class="qn">Cook session</span><span class="qh">~¥125</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Drinks',20)">
+          <span class="qi">🧃</span><span class="qn">Drinks</span><span class="qh">~¥20</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Coffee',20)">
+          <span class="qi">☕</span><span class="qn">Coffee</span><span class="qh">~¥20</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Snacks',10)">
+          <span class="qi">🍪</span><span class="qn">Snacks</span><span class="qh">~¥10</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Bread/Chapati',15)">
+          <span class="qi">🍞</span><span class="qn">Bread/Chap</span><span class="qh">~¥15</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Taxi',0)">
+          <span class="qi">🚕</span><span class="qn">Taxi</span><span class="qh">enter amt</span>
+        </button>
+        <button class="qbtn" onclick="quickLog('Other',0)">
+          <span class="qi">＋</span><span class="qn">Other</span><span class="qh">enter amt</span>
+        </button>
+      </div>
+      <div id="toast" class="toast"></div>
+    </div>
+
+    <div class="card">
+      <div class="sl">Custom entry</div>
+      <div class="form-row">
+        <input type="date" id="e-date" class="inp-date">
+        <input type="text" id="e-note" class="inp-note" placeholder="Description (optional)">
+        <select id="e-cat" class="inp-cat">
+          <option value="Cooking">Cooking</option>
+          <option value="Eat out">Eat out</option>
+          <option value="Order in">Order in</option>
+          <option value="Quick lunch">Quick lunch</option>
+          <option value="Drinks">Drinks</option>
+          <option value="Snacks">Snacks</option>
+          <option value="Bread/Chapati">Bread/Chapati</option>
+          <option value="Taxi">Taxi</option>
+          <option value="Coffee">Coffee</option>
+          <option value="Other">Other</option>
+        </select>
+        <input type="number" id="e-amount" class="inp-amt" placeholder="¥0" min="0">
+        <button class="btn" onclick="addCustom()">Add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="sl">Today's log</div>
+      <div id="today-list"></div>
+      <div id="today-footer" style="display:none" class="total-row">
+        <span style="color:var(--text-secondary)">Today's total</span>
+        <span id="today-total">¥0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THIS WEEK ── -->
+  <div id="tab-week" class="tc">
+    <div class="mg-4">
+      <div class="met"><div class="ml">Week budget</div><div class="mv info">¥475</div><div class="ms">your target</div></div>
+      <div class="met"><div class="ml">Spent</div><div class="mv" id="wk-spent">¥0</div><div class="ms">this week</div></div>
+      <div class="met"><div class="ml">Remaining</div><div class="mv" id="wk-rem">¥475</div><div class="ms">of budget</div></div>
+      <div class="met"><div class="ml">Daily avg</div><div class="mv" id="wk-avg">—</div><div class="ms" id="wk-avg-sub">no data</div></div>
+    </div>
+
+    <div class="card">
+      <div class="sl">By category this week</div>
+      <div id="cat-bars"><div class="empty">No spending logged yet.</div></div>
+    </div>
+
+    <div class="card">
+      <div class="sl">Day by day</div>
+      <div id="day-by-day"><div class="empty">No spending logged yet.</div></div>
+    </div>
+  </div>
+
+  <!-- ── POT & SAVINGS ── -->
+  <div id="tab-pot" class="tc">
+    <div class="card">
+      <div class="sl">Shared pot — ¥700 + ¥700</div>
+      <div class="prog-labels">
+        <span id="pot-lbl-left">¥0 spent</span>
+        <span id="pot-lbl-right" style="font-weight:600">¥1,400 remaining</span>
+      </div>
+      <div class="prog-outer"><div class="prog-inner" id="pot-bar" style="width:100%;background:#3B6D11"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-tertiary);margin-top:2px">
+        <span>Empty</span><span>Week 2</span><span>Week 3</span><span>¥1,400</span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="sl" style="margin-bottom:10px">Pot settings</div>
+      <div class="form-row">
+        <span style="font-size:13px;color:var(--text-secondary)">Started:</span>
+        <input type="date" id="pot-date" class="inp-date">
+        <span style="font-size:13px;color:var(--text-secondary)">Opening:</span>
+        <input type="number" id="pot-opening" value="1400" class="inp-amt">
+        <button class="btn" onclick="savePotSettings()">Save</button>
+      </div>
+    </div>
+
+    <div class="mg-4">
+      <div class="met"><div class="ml">Pot total</div><div class="mv" id="pot-total-d">¥1,400</div><div class="ms">opening</div></div>
+      <div class="met"><div class="ml">All spent</div><div class="mv" id="pot-spent-d">¥0</div><div class="ms">this cycle</div></div>
+      <div class="met"><div class="ml">Days active</div><div class="mv" id="pot-days">0</div><div class="ms" id="pot-days-s">—</div></div>
+      <div class="met"><div class="ml">Est. lasts</div><div class="mv" id="pot-est">—</div><div class="ms">at this pace</div></div>
+    </div>
+
+    <div class="card">
+      <div class="sl">Semester break savings</div>
+      <div class="form-row" style="margin-bottom:14px">
+        <span style="font-size:13px;color:var(--text-secondary)">Saved so far:</span>
+        <input type="number" id="sav-amt" placeholder="¥0" min="0" style="width:90px">
+        <span style="font-size:13px;color:var(--text-secondary)">Goal:</span>
+        <input type="number" id="sav-goal" value="1000" style="width:90px">
+        <button class="btn" onclick="saveSavings()">Save</button>
+      </div>
+      <div class="prog-labels">
+        <span id="sav-lbl-left">¥0 saved</span>
+        <span id="sav-lbl-right">¥1,000 goal</span>
+      </div>
+      <div class="prog-outer"><div class="prog-inner" id="sav-bar" style="width:0%;background:#1D9E75"></div></div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:10px" id="sav-note">Set your saved amount and goal above.</div>
+    </div>
+
+    <div class="card">
+      <div class="sl">New pot cycle</div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px">
+        When the pot runs out and you both contribute ¥700 again, start a new cycle. This clears all logged expenses but keeps your savings total.
+      </p>
+      <button class="btn btn-danger" onclick="newCycle()">Start new cycle (¥700 + ¥700)</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Storage helpers ──
+const KEYS = {
+  expenses: 'ft_expenses',
+  potOpening: 'ft_pot_opening',
+  potDate: 'ft_pot_date',
+  savedAmt: 'ft_saved_amt',
+  savGoal: 'ft_sav_goal',
+};
+
+function load(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v !== null ? JSON.parse(v) : fallback;
+  } catch(e) { return fallback; }
+}
+
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+}
+
+// ── State ──
+let expenses   = load(KEYS.expenses, []);
+let potOpening = load(KEYS.potOpening, 1400);
+let potDate    = load(KEYS.potDate, new Date().toISOString().split('T')[0]);
+let savedAmt   = load(KEYS.savedAmt, 0);
+let savGoal    = load(KEYS.savGoal, 1000);
+
+const TODAY = new Date().toISOString().split('T')[0];
+
+// ── Init form defaults ──
+document.getElementById('e-date').value = TODAY;
+document.getElementById('pot-date').value = potDate;
+document.getElementById('pot-opening').value = potOpening;
+document.getElementById('sav-amt').value = savedAmt || '';
+document.getElementById('sav-goal').value = savGoal;
+
+// ── Tab switching ──
+function showTab(name, el) {
+  document.querySelectorAll('.tc').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  render();
+}
+
+// ── Category pill class ──
+function pillClass(cat) {
+  return ({
+    'Cooking':'p-cook', 'Eat out':'p-out', 'Order in':'p-order',
+    'Quick lunch':'p-quick', 'Drinks':'p-drinks', 'Snacks':'p-snack',
+    'Coffee':'p-coffee', 'Taxi':'p-taxi', 'Bread/Chapati':'p-bread',
+  })[cat] || 'p-other';
+}
+
+const CAT_COLORS = {
+  'Cooking':'#639922','Eat out':'#D85A30','Order in':'#7F77DD',
+  'Quick lunch':'#378ADD','Drinks':'#1D9E75','Snacks':'#BA7517',
+  'Coffee':'#888780','Taxi':'#E24B4A','Bread/Chapati':'#BA7517','Other':'#888780'
+};
+
+// ── Quick log ──
+function quickLog(cat, suggested) {
+  const hint = suggested > 0 ? String(suggested) : '';
+  const raw = prompt(
+    cat + ' — how much? (¥)' + (suggested > 0 ? '\n(Press OK to confirm ¥' + suggested + ', or type a different amount)' : ''),
+    hint
+  );
+  if (raw === null) return;
+  const amount = parseFloat(raw.replace('¥','').trim());
+  if (isNaN(amount) || amount <= 0) { alert('Please enter a valid amount.'); return; }
+  expenses.unshift({ id: Date.now(), date: TODAY, note: '', cat, amount });
+  save(KEYS.expenses, expenses);
+  showToast('Logged ' + cat + ' — ¥' + amount);
+  render();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+// ── Custom add ──
+function addCustom() {
+  const date   = document.getElementById('e-date').value;
+  const note   = document.getElementById('e-note').value.trim();
+  const cat    = document.getElementById('e-cat').value;
+  const amount = parseFloat(document.getElementById('e-amount').value);
+  if (!date || !amount || amount <= 0) return;
+  expenses.unshift({ id: Date.now(), date, note, cat, amount });
+  save(KEYS.expenses, expenses);
+  document.getElementById('e-note').value = '';
+  document.getElementById('e-amount').value = '';
+  showToast('Added ¥' + amount + ' — ' + cat);
+  render();
+}
+
+// ── Delete ──
+function deleteExp(id) {
+  expenses = expenses.filter(e => e.id !== id);
+  save(KEYS.expenses, expenses);
+  render();
+}
+
+// ── Pot settings ──
+function savePotSettings() {
+  potOpening = parseFloat(document.getElementById('pot-opening').value) || 1400;
+  potDate    = document.getElementById('pot-date').value || TODAY;
+  save(KEYS.potOpening, potOpening);
+  save(KEYS.potDate, potDate);
+  render();
+}
+
+// ── Savings ──
+function saveSavings() {
+  savedAmt = parseFloat(document.getElementById('sav-amt').value) || 0;
+  savGoal  = parseFloat(document.getElementById('sav-goal').value) || 1000;
+  save(KEYS.savedAmt, savedAmt);
+  save(KEYS.savGoal, savGoal);
+  render();
+}
+
+// ── New cycle ──
+function newCycle() {
+  if (!confirm('Start a new pot cycle? All logged expenses will be cleared. Your savings total stays.')) return;
+  expenses   = [];
+  potOpening = 1400;
+  potDate    = TODAY;
+  save(KEYS.expenses, expenses);
+  save(KEYS.potOpening, potOpening);
+  save(KEYS.potDate, potDate);
+  document.getElementById('pot-opening').value = 1400;
+  document.getElementById('pot-date').value = TODAY;
+  render();
+}
+
+// ── Week start (Monday) ──
+function getWeekStart() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(new Date().setDate(diff)).toISOString().split('T')[0];
+}
+
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// ── Render all ──
+function render() {
+  const weekStart = getWeekStart();
+  const weekExp   = expenses.filter(e => e.date >= weekStart);
+  const todayExp  = expenses.filter(e => e.date === TODAY);
+
+  // ── Today log ──
+  const tl = document.getElementById('today-list');
+  const tf = document.getElementById('today-footer');
+  if (todayExp.length === 0) {
+    tl.innerHTML = '<div class="empty">Nothing logged today yet.</div>';
+    tf.style.display = 'none';
+  } else {
+    tl.innerHTML =
+      `<div class="log-head"><div>Time</div><div>Note</div><div>Category</div><div style="text-align:right">¥</div><div></div></div>` +
+      todayExp.map(e =>
+        `<div class="log-row">
+          <div style="font-size:11px;color:var(--text-tertiary)">${new Date(e.id).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${e.note||'—'}</div>
+          <div><span class="pill ${pillClass(e.cat)}">${e.cat}</span></div>
+          <div style="text-align:right;font-weight:600">¥${e.amount}</div>
+          <div><button class="dbtn" onclick="deleteExp(${e.id})">×</button></div>
+        </div>`
+      ).join('');
+    const tt = todayExp.reduce((s,e) => s + e.amount, 0);
+    document.getElementById('today-total').textContent = '¥' + Math.round(tt);
+    tf.style.display = 'flex';
+  }
+
+  // ── Week metrics ──
+  const wkTotal = weekExp.reduce((s,e) => s + e.amount, 0);
+  const wkRem   = 475 - wkTotal;
+  const ws = document.getElementById('wk-spent');
+  ws.textContent = '¥' + Math.round(wkTotal);
+  ws.className = 'mv ' + (wkTotal > 475 ? 'warn' : wkTotal > 380 ? 'meh' : 'good');
+  const wr = document.getElementById('wk-rem');
+  wr.textContent = (wkRem < 0 ? '-¥' : '¥') + Math.round(Math.abs(wkRem));
+  wr.className = 'mv ' + (wkRem < 0 ? 'warn' : wkRem < 100 ? 'meh' : 'good');
+  const daysActive = Math.max(1, [...new Set(weekExp.map(e => e.date))].length);
+  document.getElementById('wk-avg').textContent = wkTotal > 0 ? '¥' + Math.round(wkTotal / daysActive) : '—';
+  document.getElementById('wk-avg-sub').textContent = wkTotal > 0 ? 'per active day' : 'no data';
+
+  // ── Cat bars ──
+  const cats = {};
+  weekExp.forEach(e => { cats[e.cat] = (cats[e.cat] || 0) + e.amount; });
+  const cb = document.getElementById('cat-bars');
+  if (!Object.keys(cats).length) {
+    cb.innerHTML = '<div class="empty">No spending logged yet.</div>';
+  } else {
+    const maxC = Math.max(...Object.values(cats));
+    cb.innerHTML = Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat,amt]) =>
+      `<div class="cat-row">
+        <div class="cat-lbl">${cat}</div>
+        <div class="cat-bg"><div class="cat-fill" style="width:${Math.round(amt/maxC*100)}%;background:${CAT_COLORS[cat]||'#888780'}"></div></div>
+        <div class="cat-val">¥${Math.round(amt)}</div>
+      </div>`
+    ).join('');
+  }
+
+  // ── Day by day ──
+  const byDay = {};
+  weekExp.forEach(e => { (byDay[e.date] = byDay[e.date] || []).push(e); });
+  const dbd = document.getElementById('day-by-day');
+  if (!Object.keys(byDay).length) {
+    dbd.innerHTML = '<div class="empty">No spending logged yet.</div>';
+  } else {
+    dbd.innerHTML = Object.keys(byDay).sort().reverse().map(date => {
+      const d = new Date(date + 'T12:00:00');
+      const label = DAY_NAMES[d.getDay()] + ' ' + date.slice(5);
+      const total = byDay[date].reduce((s,e) => s + e.amount, 0);
+      return `<div class="day-block">
+        <div class="day-hd"><span>${label}</span><span class="day-total">¥${Math.round(total)}</span></div>
+        <div class="log-head"><div>Date</div><div>Note</div><div>Category</div><div style="text-align:right">¥</div><div></div></div>
+        ${byDay[date].map(e =>
+          `<div class="log-row">
+            <div style="font-size:11px;color:var(--text-tertiary)">${e.date.slice(5)}</div>
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px">${e.note||'—'}</div>
+            <div><span class="pill ${pillClass(e.cat)}">${e.cat}</span></div>
+            <div style="text-align:right;font-weight:600">¥${e.amount}</div>
+            <div><button class="dbtn" onclick="deleteExp(${e.id})">×</button></div>
+          </div>`
+        ).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  // ── Pot ──
+  const potSpent = expenses.reduce((s,e) => s + e.amount, 0);
+  const potRem   = potOpening - potSpent;
+  const pct = Math.max(0, Math.min(100, potRem / potOpening * 100));
+  const bar = document.getElementById('pot-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 50 ? '#3B6D11' : pct > 25 ? '#BA7517' : '#A32D2D';
+  document.getElementById('pot-lbl-left').textContent = '¥' + Math.round(potSpent) + ' spent';
+  const prl = document.getElementById('pot-lbl-right');
+  prl.textContent = '¥' + Math.round(potRem) + ' remaining';
+  prl.style.color = pct < 25 ? '#A32D2D' : pct < 50 ? '#BA7517' : '#3B6D11';
+  document.getElementById('pot-total-d').textContent = '¥' + Math.round(potOpening);
+  const psd = document.getElementById('pot-spent-d');
+  psd.textContent = '¥' + Math.round(potSpent);
+  psd.className = 'mv ' + (potSpent > potOpening * 0.75 ? 'warn' : potSpent > potOpening * 0.5 ? 'meh' : 'good');
+  const startD = new Date(potDate + 'T12:00:00');
+  const daysOn = Math.max(1, Math.round((new Date() - startD) / 86400000));
+  document.getElementById('pot-days').textContent = daysOn;
+  document.getElementById('pot-days-s').textContent = 'since ' + startD.toLocaleDateString([], {month:'short', day:'numeric'});
+  if (potSpent > 0) {
+    const rate = potSpent / daysOn;
+    const left = Math.round(potRem / rate);
+    const pe = document.getElementById('pot-est');
+    pe.textContent = left + 'd';
+    pe.className = 'mv ' + (left < 7 ? 'warn' : left < 14 ? 'meh' : 'good');
+  } else {
+    document.getElementById('pot-est').textContent = '—';
+    document.getElementById('pot-est').className = 'mv';
+  }
+
+  // ── Savings ──
+  const sp = Math.min(100, savGoal > 0 ? savedAmt / savGoal * 100 : 0);
+  document.getElementById('sav-bar').style.width = Math.round(sp) + '%';
+  document.getElementById('sav-lbl-left').textContent = '¥' + Math.round(savedAmt) + ' saved';
+  document.getElementById('sav-lbl-right').textContent = '¥' + Math.round(savGoal) + ' goal';
+  document.getElementById('sav-note').textContent = savedAmt > 0
+    ? (savGoal - savedAmt > 0
+        ? '¥' + Math.round(savGoal - savedAmt) + ' to go — ' + Math.round(sp) + '% of your semester break goal.'
+        : 'Goal reached! Enjoy your break.')
+    : 'Set your saved amount and goal above to track progress.';
+}
+
+render();
+</script>
+</body>
+</html>
